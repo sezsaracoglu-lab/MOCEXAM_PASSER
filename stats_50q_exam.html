@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistics I — 50Q Mock Exam</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0e0c; --bg2: #181610; --bg3: #21201a; --bg4: #2c2920;
+  --gold: #c9a96e; --gold-light: #e0c488; --gold-dim: rgba(201,169,110,0.12);
+  --cream: #e8dcc8; --cream-dim: #9e9080; --border: rgba(201,169,110,0.18);
+  --c1: #6fa882; --c1b: rgba(111,168,130,0.12);
+  --c4: #7a8ebd; --c4b: rgba(122,142,189,0.12);
+  --c5: #c9955a; --c5b: rgba(201,149,90,0.12);
+  --c8: #b07498; --c8b: rgba(176,116,152,0.12);
+  --ok: #6fa882; --err: #c46b6b;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { background:var(--bg); color:var(--cream); font-family:'DM Sans',sans-serif; min-height:100vh; }
+
+/* ── HEADER ── */
+.header {
+  background:var(--bg2); border-bottom:1px solid var(--border);
+  padding:22px 32px; position:sticky; top:0; z-index:100;
+  display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
+}
+.header-left h1 { font-family:'Playfair Display',serif; font-size:1.25rem; color:var(--gold); }
+.header-left p  { font-size:0.76rem; color:var(--cream-dim); margin-top:2px; }
+.header-right   { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+
+/* score pill */
+.score-pill {
+  background:var(--bg3); border:1px solid var(--border); border-radius:20px;
+  padding:6px 18px; font-size:0.82rem;
+}
+.score-pill span { color:var(--gold); font-weight:600; }
+
+/* progress */
+.progress-wrap { width:200px; }
+.progress-bar  { height:5px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--gold); border-radius:3px; transition:width .4s ease; width:0%; }
+.progress-text { font-size:0.72rem; color:var(--cream-dim); margin-top:4px; text-align:right; }
+
+/* ── CONTROLS ── */
+.controls {
+  max-width:820px; margin:30px auto 0; padding:0 24px;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+}
+.filter-label { font-size:0.78rem; color:var(--cream-dim); }
+.filter-btn {
+  padding:6px 16px; border-radius:20px; border:1px solid var(--border);
+  background:transparent; color:var(--cream-dim); font-size:0.76rem;
+  cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif;
+}
+.filter-btn:hover { border-color:var(--gold); color:var(--gold); }
+.filter-btn.active           { border-color:var(--gold);  color:var(--gold);  background:var(--gold-dim); }
+.filter-btn[data-f="1"].active { border-color:var(--c1); color:var(--c1); background:var(--c1b); }
+.filter-btn[data-f="4"].active { border-color:var(--c4); color:var(--c4); background:var(--c4b); }
+.filter-btn[data-f="5"].active { border-color:var(--c5); color:var(--c5); background:var(--c5b); }
+.filter-btn[data-f="8"].active { border-color:var(--c8); color:var(--c8); background:var(--c8b); }
+
+.shuffle-btn {
+  margin-left:auto; padding:6px 16px; border-radius:20px;
+  border:1px solid var(--border); background:transparent;
+  color:var(--cream-dim); font-size:0.76rem; cursor:pointer;
+  transition:all .2s; font-family:'DM Sans',sans-serif;
+}
+.shuffle-btn:hover { border-color:var(--gold); color:var(--gold); }
+
+/* ── EXAM BODY ── */
+.exam-body { max-width:820px; margin:24px auto 80px; padding:0 24px; }
+
+/* question card */
+.q-card {
+  background:var(--bg2); border:1px solid var(--border); border-radius:14px;
+  padding:30px; animation:fadeUp .3s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.q-meta { display:flex; align-items:center; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+.q-num  { font-size:0.76rem; color:var(--cream-dim); }
+.q-ch   {
+  font-size:0.7rem; padding:3px 10px; border-radius:10px;
+  font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+}
+.q-ch.c1 { background:var(--c1b); color:var(--c1); }
+.q-ch.c4 { background:var(--c4b); color:var(--c4); }
+.q-ch.c5 { background:var(--c5b); color:var(--c5); }
+.q-ch.c8 { background:var(--c8b); color:var(--c8); }
+.q-diff  { font-size:0.7rem; color:var(--cream-dim); padding:2px 8px; border:1px solid var(--border); border-radius:8px; }
+
+.q-text { font-size:0.96rem; color:var(--cream); line-height:1.75; margin-bottom:22px; }
+
+/* options */
+.options { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+.opt {
+  display:flex; align-items:flex-start; gap:12px;
+  padding:13px 16px; border-radius:9px; border:1px solid var(--border);
+  background:var(--bg3); color:var(--cream); cursor:pointer;
+  font-size:0.85rem; line-height:1.55; text-align:left;
+  font-family:'DM Sans',sans-serif; transition:all .15s;
+}
+.opt:hover:not(:disabled) { border-color:var(--gold); background:var(--bg4); }
+.opt:disabled { cursor:default; }
+.opt.correct { border-color:var(--ok); background:rgba(111,168,130,.1); }
+.opt.wrong   { border-color:var(--err); background:rgba(196,107,107,.09); }
+.opt-letter {
+  width:26px; height:26px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.74rem; font-weight:700; border:1.5px solid currentColor;
+}
+.opt.correct .opt-letter { background:var(--ok);  border-color:var(--ok);  color:#fff; }
+.opt.wrong   .opt-letter { background:var(--err); border-color:var(--err); color:#fff; }
+
+/* explanation */
+.explanation {
+  display:none; padding:16px 18px; border-radius:9px;
+  font-size:0.82rem; line-height:1.75; margin-bottom:18px;
+  border-left:3px solid var(--gold); background:var(--bg3); color:var(--cream-dim);
+}
+.explanation.show { display:block; animation:fadeUp .25s ease; }
+.explanation.ok   { border-color:var(--ok); }
+.explanation.bad  { border-color:var(--err); }
+.explanation strong { color:var(--gold); }
+.explanation .why-right {
+  margin-top:10px; padding:10px 14px; border-radius:7px;
+  background:rgba(111,168,130,.08); border:1px solid rgba(111,168,130,.25);
+  color:var(--cream); font-size:0.81rem;
+}
+.explanation .why-right::before { content:"✓ Why this is correct: "; color:var(--ok); font-weight:600; }
+
+/* nav */
+.nav { display:flex; gap:12px; justify-content:flex-end; }
+.btn-next {
+  padding:10px 26px; border-radius:8px; border:none;
+  background:var(--gold); color:var(--bg); font-family:'DM Sans',sans-serif;
+  font-size:0.85rem; font-weight:600; cursor:pointer; transition:all .2s;
+}
+.btn-next:hover { background:var(--gold-light); }
+
+/* ── RESULTS ── */
+.results-panel {
+  display:none; text-align:center; padding:60px 24px 80px;
+  max-width:820px; margin:0 auto; animation:fadeUp .4s ease;
+}
+.results-panel.show { display:block; }
+.res-ring {
+  width:130px; height:130px; border-radius:50%;
+  border:3px solid var(--gold); display:flex; flex-direction:column;
+  align-items:center; justify-content:center; margin:0 auto 28px;
+}
+.res-score { font-family:'Playfair Display',serif; font-size:2.4rem; color:var(--gold); line-height:1; }
+.res-total { font-size:0.76rem; color:var(--cream-dim); margin-top:2px; }
+.res-title { font-family:'Playfair Display',serif; font-size:1.5rem; margin-bottom:10px; }
+.res-pct   { font-size:0.9rem; color:var(--cream-dim); margin-bottom:36px; }
+
+.breakdown { display:flex; justify-content:center; gap:28px; flex-wrap:wrap; margin-bottom:40px; }
+.bd-item .bd-val   { font-family:'Playfair Display',serif; font-size:1.6rem; }
+.bd-item .bd-label { font-size:0.74rem; color:var(--cream-dim); margin-top:2px; }
+.bd-item.c1 .bd-val { color:var(--c1); }
+.bd-item.c4 .bd-val { color:var(--c4); }
+.bd-item.c5 .bd-val { color:var(--c5); }
+.bd-item.c8 .bd-val { color:var(--c8); }
+
+.btn-restart {
+  padding:12px 32px; border-radius:9px; border:1px solid var(--border);
+  background:transparent; color:var(--cream); font-family:'DM Sans',sans-serif;
+  font-size:0.86rem; font-weight:600; cursor:pointer; transition:all .2s;
+}
+.btn-restart:hover { border-color:var(--gold); color:var(--gold); }
+
+/* scrollbar */
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-thumb { background:var(--bg4); border-radius:3px; }
+
+@media(max-width:600px){
+  .header { padding:16px; }
+  .progress-wrap { display:none; }
+  .exam-body { padding:0 14px; }
+  .q-card { padding:20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <h1>Statistics I — Mock Exam</h1>
+    <p>Passer Chapters 1 · 4 · 5 · 8 · EUR 2024–2025</p>
+  </div>
+  <div class="header-right">
+    <div class="score-pill">Score: <span id="hdr-score">0</span> / <span id="hdr-ans">0</span></div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="pfill"></div></div>
+      <div class="progress-text" id="ptext">0 / 50</div>
+    </div>
+  </div>
+</header>
+
+<!-- CONTROLS -->
+<div class="controls" id="controls">
+  <span class="filter-label">Show:</span>
+  <button class="filter-btn active" data-f="all">All 50</button>
+  <button class="filter-btn" data-f="1">Ch 1 · Science</button>
+  <button class="filter-btn" data-f="4">Ch 4 · Variables</button>
+  <button class="filter-btn" data-f="5">Ch 5 · Correlation</button>
+  <button class="filter-btn" data-f="8">Ch 8 · Design</button>
+  <button class="shuffle-btn" id="shuffle-btn">⇄ Shuffle</button>
+</div>
+
+<!-- EXAM BODY -->
+<div class="exam-body" id="exam-body">
+  <div id="q-container"></div>
+</div>
+
+<!-- RESULTS -->
+<div class="results-panel" id="results-panel">
+  <div class="res-ring">
+    <div class="res-score" id="r-score">0</div>
+    <div class="res-total" id="r-total">/ 50</div>
+  </div>
+  <div class="res-title" id="r-title"></div>
+  <div class="res-pct" id="r-pct"></div>
+  <div class="breakdown" id="r-breakdown"></div>
+  <button class="btn-restart" onclick="restart()">↻ Restart Exam</button>
+</div>
+
+<script>
+/* ────────────────────────── QUESTION BANK ────────────────────────── */
+const BANK = [
+
+/* ══ CHAPTER 1 ══ */
+{ch:1,diff:"Easy",
+ q:"Which method of belief formation involves holding views simply because they have long been held, regardless of new evidence?",
+ opts:["Authority","Reason","Tenacity","Systematic Empiricism"],
+ ans:2,
+ why:"Tenacity = believing something because we have always believed it. Its core limitation is that it resists contrary evidence, making accurate belief formation less likely. The key word is 'long-held' — no re-evaluation occurs."},
+
+{ch:1,diff:"Moderate",
+ q:"A researcher concludes that stress causes reduced memory recall. Which THREE criteria must be satisfied?",
+ opts:["Covariation, operational definitions, and public reporting","Covariation, temporal order, and absence of plausible alternative explanations","Temporal order, empirical evidence, and peer review","Temporal order, systematic empiricism, and falsifiability"],
+ ans:1,
+ why:"The three causal criteria are: (1) covariation — X and Y must vary together; (2) temporal order — X must change before Y; (3) absence of plausible alternatives — other causes must be ruled out. Operational definitions and peer review are good scientific practices but are NOT part of the causal inference criteria."},
+
+{ch:1,diff:"Easy",
+ q:"What is the fundamental difference between basic and applied research?",
+ opts:["Basic uses empiricism; applied uses systematic empiricism","Basic examines the fundamental nature of phenomena; applied directly targets real-world problems","Applied validates theories; basic seeks to falsify hypotheses","Basic involves anecdotal evidence; applied avoids it"],
+ ans:1,
+ why:"Basic research asks 'how does X work?' at a foundational level — driven by curiosity about phenomena. Applied research is problem-driven, aiming to solve or evaluate specific real-world issues. Many studies blend both, and they inform each other reciprocally."},
+
+{ch:1,diff:"Moderate",
+ q:"Which scenario BEST demonstrates systematic empiricism (rather than simple empiricism)?",
+ opts:["Noticing a pattern after a single trial","Testing a hypothesis across many trials, analyzing results, and replicating the study","Accepting a claim from a credible expert","Forming a conclusion from personal experience"],
+ ans:1,
+ why:"Systematic empiricism goes beyond casual observation: it requires multiple trials, careful analysis of outcomes, and replication. This is what distinguishes the scientific method from ordinary experience-based conclusions (mere empiricism)."},
+
+{ch:1,diff:"Easy",
+ q:"How does skepticism differ from cynicism according to Passer?",
+ opts:["Skepticism focuses on personal experience; cynicism uses systematic evidence","Skepticism is open-minded and willing to accept claims given good evidence; cynicism dismisses claims outright","Skepticism requires falsifiability; cynicism evaluates nonempirical questions","Skepticism is linked to tenacity; cynicism relies on authority"],
+ ans:1,
+ why:"Skepticism = 'show me your evidence' mindset — open to accepting claims IF the evidence is good. Cynicism = dismissal regardless of evidence. Skepticism is the scientifically appropriate stance because it maintains openness while demanding evidence."},
+
+{ch:1,diff:"Difficult",
+ q:"What makes an assertion 'falsifiable' in the scientific sense?",
+ opts:["It has already been disproven by data","We can envision empirical evidence that would show it to be false","It is currently disputed by at least two scientists","It cannot be tested due to current technological limits"],
+ ans:1,
+ why:"Falsifiability (Popper): a claim is scientific if we can conceive of evidence that would prove it false. It does NOT mean it has been disproven — it means, in principle, it COULD be. Claims that can never be falsified (e.g., 'invisible forces explain everything') are non-scientific."},
+
+{ch:1,diff:"Moderate",
+ q:"A person only follows news outlets that confirm their existing views. This best illustrates:",
+ opts:["Tenacity","Anecdotal evidence","Confirmation bias","The authority method"],
+ ans:2,
+ why:"Confirmation bias is the tendency to selectively gather or interpret information that supports our existing views, thereby reducing exposure to disconfirming evidence. It is a key limitation of everyday empirical reasoning and undermines objectivity."},
+
+{ch:1,diff:"Difficult",
+ q:"How does a theory differ from a hypothesis?",
+ opts:["A theory is derived from anecdotal evidence; a hypothesis from empirical data","A theory is a broader formal set of statements specifying how and why variables are related; a hypothesis is a tentative proposition about specific variables","A theory can never be falsified; a hypothesis can","A theory is used only in applied research; a hypothesis in basic research"],
+ ans:1,
+ why:"Hypotheses are specific, testable propositions. Theories are broader — formal systems of statements explaining how and why multiple variables or events are related. To achieve theory status, an explanation must be consistent with accumulated evidence. Hypotheses may be derived from theories."},
+
+{ch:1,diff:"Tricky",
+ q:"Science cannot answer which type of question?",
+ opts:["Does high cortisol impair working memory?","Is it morally right to deceive participants in research?","Do sleep-deprived rats learn mazes more slowly?","Are children from authoritative homes more prosocial?"],
+ ans:1,
+ why:"Science is limited to empirical (observable/testable) questions. Moral/ethical questions ('is X right?') involve value judgments that science cannot settle — they require philosophy, ethics, or personal reflection. Science can describe WHAT happens but cannot prescribe WHAT SHOULD happen."},
+
+{ch:1,diff:"Tricky",
+ q:"Prediction serves two major roles in science. Which correctly identifies both?",
+ opts:["Describing phenomena and forming operational definitions","Hypothesis/theory testing and applied prediction","Falsification and systematic observation","Control and replication"],
+ ans:1,
+ why:"Prediction plays two roles: (a) testing hypotheses/theories — confirmed predictions support a theory; (b) applied prediction — even without establishing causation, knowing X predicts Y allows practical use. Both roles are distinct and both are scientifically valuable."},
+
+{ch:1,diff:"Moderate",
+ q:"An operational definition differs from a conceptual definition because it:",
+ opts:["Describes what a researcher means by a term in everyday language","Defines a variable in terms of the specific procedures used to measure or manipulate it","Specifies the theoretical framework behind a hypothesis","Is only needed for dependent variables, not independent variables"],
+ ans:1,
+ why:"Operational definitions translate abstract concepts into concrete, measurable procedures. E.g., 'anxiety' (conceptual) → 'score on the GAD-7 scale' (operational). This is essential for scientific accuracy, replication, and objectivity — others must be able to reproduce the measurement."},
+
+{ch:1,diff:"Easy",
+ q:"Why is public reporting of research findings important in science?",
+ opts:["It confirms the researcher's hypothesis before peer review","It allows other scientists to evaluate the evidence, replicate the study, and grow the body of knowledge","It ensures the study is automatically accepted by journals","It eliminates the need for operational definitions"],
+ ans:1,
+ why:"Public reporting serves three key functions: (1) grows the cumulative body of knowledge; (2) allows fellow scientists to evaluate evidence quality; (3) enables replication of studies. This is why peer-reviewed journals are central to science — screening by 2–3 experts ensures quality control."},
+
+{ch:1,diff:"Difficult",
+ q:"Which statement BEST describes anecdotal evidence and its main limitation?",
+ opts:["Anecdotal evidence is systematically gathered and therefore reliable","Anecdotal evidence consists of personal stories or descriptions offered as facts, but may represent atypical cases and is usually unsystematically observed","Anecdotal evidence is only problematic when it contradicts expert authority","Anecdotal evidence is a form of systematic empiricism when gathered across multiple people"],
+ ans:1,
+ why:"Anecdotal evidence = brief personal stories offered as facts. Two key problems: (1) the anecdote may be atypical/unrepresentative; (2) it is based on unsystematic observation. Skepticism is the best defense against being misled by compelling but unreliable anecdotes."},
+
+/* ══ CHAPTER 4 ══ */
+{ch:4,diff:"Moderate",
+ q:"A mediator variable differs from a moderator variable in that a mediator:",
+ opts:["Explains WHEN an IV influences a DV; a moderator explains WHY","Explains WHY an IV influences a DV (the mechanism); a moderator explains WHEN and FOR WHOM","Provides a boundary condition; a moderator provides the causal chain","Is always an external factor; a moderator is always personal"],
+ ans:1,
+ why:"Mediator = the 'middle path' mechanism (WHY). Example: Parental depression → negative appraisals → harsh parenting → child externalizing. Moderator = boundary condition (WHEN/FOR WHOM). It alters the strength or direction of the IV→DV relationship. Example: Cell phone use → accidents, moderated by traffic density."},
+
+{ch:4,diff:"Easy",
+ q:"What is the key distinction between discrete and continuous variables?",
+ opts:["Discrete variables are numerical; continuous variables are categorical","Discrete variables differ in kind; continuous variables differ in amount","Between any two adjacent values of a discrete variable no intermediate values are possible; continuous variables allow intermediate values","Discrete variables use ordinal scales; continuous variables use ratio scales"],
+ ans:2,
+ why:"Discrete variables have no possible values between adjacent points (e.g., 0, 1, 2 children — you cannot have 1.7 children). Continuous variables can in principle take any value within a range (e.g., reaction time of 1.237 seconds). This distinction matters for which statistical analyses are appropriate."},
+
+{ch:4,diff:"Moderate",
+ q:"Which statement about ordinal scales is correct?",
+ opts:["Ordinal scales have a true zero point indicating absence of an attribute","Ordinal scales provide rank order information but NOT information about equal intervals between values","Ordinal scales measure qualitative differences only, with no implied order","Ordinal and interval scales convey equivalent information for practical purposes"],
+ ans:1,
+ why:"Ordinal scales give relative rank (1st > 2nd > 3rd) but the gaps between ranks are NOT assumed to be equal. Claire may be much more popular than Elissa, who is only slightly more popular than Alice. The equal-interval property belongs to interval scales — that's the crucial upgrade."},
+
+{ch:4,diff:"Difficult",
+ q:"To claim high construct validity for an anxiety scale, which combination of evidence is MOST convincing?",
+ opts:["High content validity, low discriminant validity, and high face validity","High convergent validity, high criterion validity, and low random error","High convergent validity, high discriminant validity, and consistent test-retest reliability","High criterion validity, high systematic error, and high interobserver reliability"],
+ ans:2,
+ why:"Construct validity requires: convergent validity (correlates with OTHER anxiety measures), discriminant validity (does NOT correlate too strongly with measures of unrelated constructs like IQ), and reliability (e.g., test-retest consistency). Option C covers all three pillars correctly."},
+
+{ch:4,diff:"Moderate",
+ q:"Systematic error and random error differ in that:",
+ opts:["Systematic error affects only categorical variables; random error affects quantitative variables","Systematic error is a consistent bias occurring with every measurement; random error arises from chance fluctuations","Random error comes from procedural bias; systematic error from participant variability","Systematic error reduces reliability; random error reduces accuracy"],
+ ans:1,
+ why:"Systematic error (bias) is consistent and directional — your scale is always 2kg too heavy. This threatens accuracy/validity. Random error is unpredictable and fluctuates around the true score — this threatens reliability. The key: systematic = consistent; random = fluctuating."},
+
+{ch:4,diff:"Moderate",
+ q:"Which of the following BEST describes a confounding variable?",
+ opts:["A variable that measures the outcome but is unrelated to the IV","A variable that systematically co-varies with BOTH the IV and DV, making causal conclusions impossible","A variable that explains the mechanism between IV and DV","A variable that alters the strength of the IV–DV relationship"],
+ ans:1,
+ why:"A confounding variable is problematic because it co-varies with the IV — so any changes in the DV could be caused by EITHER the IV or the confound. It provides a plausible alternative explanation, invalidating the third causal criterion and blocking clean causal inference."},
+
+{ch:4,diff:"Moderate",
+ q:"A researcher administers a new intelligence test to students, then six months later checks their academic grades. This demonstrates:",
+ opts:["Test-retest reliability","Concurrent validity","Predictive validity","Discriminant validity"],
+ ans:2,
+ why:"Predictive validity: a measure recorded at TIME 1 predicts a criterion at a FUTURE time point. Here, IQ test → academic grades 6 months later. Concurrent validity would assess the test and criterion at the SAME time. Test-retest reliability would re-administer the same test twice under equivalent conditions."},
+
+{ch:4,diff:"Easy",
+ q:"Cronbach's alpha is a measure of:",
+ opts:["Test-retest reliability across two time points","Internal reliability — it reflects the average inter-item correlation within a test","Interobserver reliability between two independent raters","Predictive validity against a future criterion"],
+ ans:1,
+ why:"Cronbach's alpha measures internal consistency — how strongly the individual items in a test correlate with each other on average. High alpha means items are measuring the same underlying construct. It is a form of internal reliability, not test-retest or interobserver reliability."},
+
+{ch:4,diff:"Difficult",
+ q:"Hypothetical constructs such as 'motivation' or 'depression' are defined as:",
+ opts:["Directly observed through behavioral coding in real time","Underlying characteristics inferred from measurable behaviors or outcomes — not directly observable","Variables that can only be measured on interval scales","Subject variables that serve exclusively as moderators"],
+ ans:1,
+ why:"Hypothetical constructs cannot be directly seen or touched — we infer their presence from observable indicators. Depression is inferred from mood reports, sleep patterns, and behavioral changes. This is why operational definitions are critical: they specify HOW we will measure these invisible constructs."},
+
+{ch:4,diff:"Tricky",
+ q:"A test is perfectly reliable (very consistent scores) but measures shyness when it claims to measure extraversion. This test:",
+ opts:["Has high construct validity because it is reliable","Lacks construct validity — reliability is necessary but not sufficient for validity","Has high face validity and therefore high construct validity","Has systematic error but no random error"],
+ ans:1,
+ why:"KEY RULE: reliability is NECESSARY but NOT SUFFICIENT for validity. A measure can be perfectly consistent (high reliability) yet consistently measure the WRONG thing (low validity). For construct validity, you also need convergent and discriminant evidence showing you're measuring what you claim."},
+
+{ch:4,diff:"Moderate",
+ q:"The ratio scale differs from the interval scale primarily because:",
+ opts:["Ratio scales measure categorical variables; interval scales measure quantitative variables","Ratio scales have a true zero point representing the complete absence of an attribute; interval scales do not","Ratio scales provide rank order only; interval scales provide equal distances","Interval scales allow multiplication; ratio scales only allow addition"],
+ ans:1,
+ why:"The defining feature of a ratio scale is the TRUE ZERO POINT — zero means the complete absence of the attribute. This allows meaningful ratio comparisons (e.g., 60kg is twice 30kg). Temperature in Celsius lacks a true zero (0°C doesn't mean 'no temperature'), so it's interval, not ratio."},
+
+{ch:4,diff:"Moderate",
+ q:"Which type of reliability is assessed by dividing test items into two halves and correlating them?",
+ opts:["Test-retest reliability","Interobserver reliability","Split-half reliability","Predictive validity"],
+ ans:2,
+ why:"Split-half reliability is a form of INTERNAL reliability. Items are divided into two subsets (e.g., odd vs. even items), and the correlation between the two halves is computed. If the halves correlate strongly, items are measuring the same underlying construct — evidence of internal consistency."},
+
+{ch:4,diff:"Tricky",
+ q:"A researcher measures 'academic motivation' using a 10-item questionnaire. This illustrates:",
+ opts:["A directly observable variable that requires no operational definition","An interval scale variable with a true zero point","A hypothetical construct operationalized through a measurement procedure","A subject variable that can only serve as a moderator"],
+ ans:2,
+ why:"'Academic motivation' is a hypothetical construct — not directly observable, inferred from responses. The 10-item questionnaire is its OPERATIONAL DEFINITION — defining the construct in terms of the specific measurement procedure used. This is how psychologists turn abstract concepts into measurable variables."},
+
+/* ══ CHAPTER 5 ══ */
+{ch:5,diff:"Moderate",
+ q:"Which of the following is NOT a key distinction between correlational research and experiments?",
+ opts:["Correlational research measures variables; experiments manipulate them","Correlational research can infer cause–effect if the correlation is strong enough","Experiments control for alternative explanations; correlational research relies on statistical adjustments","In experiments, the IV is manipulated before the DV is measured"],
+ ans:1,
+ why:"The STRENGTH of a correlation NEVER justifies causal inference. Even r = 1.0 cannot rule out bidirectionality or third-variable problems. Causal inference requires manipulation + control — the hallmarks of experiments. This is one of the most commonly tested misconceptions in research methods."},
+
+{ch:5,diff:"Moderate",
+ q:"What does the coefficient of determination (r²) tell us?",
+ opts:["The percentage of variance in X predicted by variance in Y","The percentage of variance in Y statistically accounted for by variance in X","The absolute strength of the linear relationship","The causal direction of the relationship between X and Y"],
+ ans:1,
+ why:"r² = the proportion of variance in Y that is statistically accounted for by variance in X. Example: r = .50, r² = .25 → 25% of variance in Y is explained. The other 75% comes from other factors. Note: r² describes statistical prediction, NOT causation."},
+
+{ch:5,diff:"Moderate",
+ q:"When should Spearman's rho be preferred over Pearson's r?",
+ opts:["When both variables are measured on ratio scales","When one or both variables are measured on an ordinal scale","When both variables are normally distributed","When the researcher wants to establish causation"],
+ ans:1,
+ why:"Spearman's rho is the rank-order correlation coefficient, appropriate when one or both variables are ORDINAL (or when normality is violated). Pearson's r requires INTERVAL or RATIO scale data and assumes a linear relationship. Using Pearson's r on ordinal data would be inappropriate."},
+
+{ch:5,diff:"Easy",
+ q:"A spurious correlation occurs when:",
+ opts:["A correlation exists purely by chance in one sample","A third variable causes both X and Y, making them appear related despite no direct causal link","A correlation cannot be replicated in a second study","A study uses an inadequate sample size"],
+ ans:1,
+ why:"Spurious = not genuine. X and Y are statistically correlated ONLY because a third variable Z causes both. There is no real causal link between X and Y. Classic example: ice cream sales correlate with drowning rates — both are caused by hot weather (Z), not each other."},
+
+{ch:5,diff:"Difficult",
+ q:"Which research design addresses the bidirectionality problem but NOT the third-variable problem?",
+ opts:["Cross-sectional research design","Prospective longitudinal design","Cross-lagged panel design","Partial correlation analysis"],
+ ans:1,
+ why:"A prospective design measures X at Time 1 and Y at a later Time 2, making it implausible that Y caused X (temporal order is established → bidirectionality addressed). However, a third variable Z could still influence both X and Y — that problem REMAINS. Only experimental manipulation can fully address it."},
+
+{ch:5,diff:"Moderate",
+ q:"Partial correlation is best used to:",
+ opts:["Increase the absolute value of Pearson's r by removing outliers","Compute r(X,Y) while statistically controlling for its correlations with a third variable Z","Establish causal relationships by removing random measurement error","Correlate ordinal variables using a rank-order method"],
+ ans:1,
+ why:"Partial correlation removes the shared influence of Z from both X and Y, then computes the X–Y correlation on the residuals. If the X–Y correlation drops substantially after controlling for Z, this suggests Z was driving the apparent relationship — a spurious correlation."},
+
+{ch:5,diff:"Easy",
+ q:"According to Cohen's guidelines, Pearson's r = .30 represents:",
+ opts:["A weak (small) correlation","A medium-sized correlation","A strong (large) correlation","No meaningful correlation"],
+ ans:1,
+ why:"Cohen's conventions: small = |r| .10–.29; medium = .30–.49; large = .50–1.00. r = .30 sits at the lower boundary of medium. These are guidelines, not rigid rules — context and domain matter for interpreting practical significance."},
+
+{ch:5,diff:"Difficult",
+ q:"A researcher finds r = .60 between TV watching and perceived crime risk. What does r² = .36 mean?",
+ opts:["TV watching and crime risk are causally related with 36% certainty","36% of the variance in perceived crime risk is statistically accounted for by variance in TV watching","TV watching directly causes 36% of perceived crime risk","64% of variance in TV watching is explained by crime risk perception"],
+ ans:1,
+ why:"r² = .36 means that 36% of the variability in perceived crime risk (Y) is statistically accounted for by variability in TV watching (X) through their linear relationship. The remaining 64% is due to other factors. This is a statistical statement, NOT a causal one."},
+
+{ch:5,diff:"Tricky",
+ q:"The cross-lagged panel design's main advantage over a simple prospective design is that it:",
+ opts:["Completely eliminates all third-variable explanations","Examines ALL four correlations (X1–Y2, Y1–X2, X1–X2, Y1–Y2) to provide richer evidence about causal direction","Allows the IV to be manipulated across time points","Is more cost-efficient since it requires fewer measurement occasions"],
+ ans:1,
+ why:"In the cross-lagged panel design, comparing the cross-lagged correlations (X1→Y2 vs Y1→X2) tells us which direction causality is more likely to run. If X1→Y2 > Y1→X2, X is more likely causal. A simple prospective study only measures X before Y, giving just one cross-lagged correlation — less informative."},
+
+{ch:5,diff:"Tricky",
+ q:"Pearson's r = −.70 compared to Pearson's r = +.40: which is stronger and why?",
+ opts:["r = +.40 is stronger because positive correlations indicate a real effect","r = −.70 is stronger because its absolute value (.70) is larger than .40","They are equal in strength because direction is irrelevant","r = −.70 cannot be compared to r = +.40 without knowing the scale of measurement"],
+ ans:1,
+ why:"SIGN indicates direction (positive = both variables go up together; negative = as one goes up, the other goes down). ABSOLUTE VALUE indicates strength. |−.70| = .70 > |+.40| = .40. Therefore r = −.70 represents a stronger relationship, despite being negative."},
+
+{ch:5,diff:"Difficult",
+ q:"Simpson's Paradox describes a situation where:",
+ opts:["A correlation appears strong in a small sample but disappears in a large one","A trend appears in combined data but reverses or disappears when the data are broken into subgroups","Two variables are correlated due to a common response variable","The correlation coefficient exceeds 1.0 due to measurement error"],
+ ans:1,
+ why:"Simpson's Paradox: a statistical trend seen in aggregated data disappears or reverses when the data are examined by subgroup. This occurs because a lurking/confounding variable is unevenly distributed across subgroups. It is a dramatic demonstration of why disaggregating data matters."},
+
+{ch:5,diff:"Moderate",
+ q:"The bidirectionality problem in correlational research refers to:",
+ opts:["The difficulty of replicating correlational findings in different samples","Ambiguity about whether X caused Y, or Y caused X, or both influence each other","The influence of a third variable driving both X and Y","The inability to establish temporal order in cross-sectional studies only"],
+ ans:1,
+ why:"Bidirectionality (two-way causality problem): when X correlates with Y, we cannot determine from the correlation alone whether X→Y, Y→X, or X↔Y (mutual influence). This is why experiments (where the researcher manipulates X before measuring Y) are needed for clean causal claims."},
+
+/* ══ CHAPTER 8 ══ */
+{ch:8,diff:"Easy",
+ q:"The primary goal of experimental control is:",
+ opts:["To confirm the hypothesis before data collection begins","To manipulate the dependent variable for desired results","To ensure the IV — not uncontrolled factors — causes observed effects on the DV","To eliminate all variables except the dependent variable"],
+ ans:2,
+ why:"Experimental control enables the researcher to attribute changes in the DV specifically to the IV. Without control, confounding variables provide plausible alternative explanations, undermining the third causal criterion. Control means: manipulating IVs, choosing how to measure DVs, and regulating the research environment."},
+
+{ch:8,diff:"Moderate",
+ q:"Which is the BEST example of a confounding variable in an experiment?",
+ opts:["Participants' prior knowledge randomly distributed across groups","Room temperature that is systematically higher in the experimental condition than the control condition","Random fatigue in a within-subjects design","Task difficulty kept constant for all participants"],
+ ans:1,
+ why:"A confound must SYSTEMATICALLY co-vary with the IV. If the experimental group works in a hotter room, we cannot tell whether the IV or the temperature caused any DV differences. Random fatigue in within-subjects designs is an order effect, not a confound. Randomly distributed prior knowledge is not confounding."},
+
+{ch:8,diff:"Easy",
+ q:"In a between-subjects design, random assignment is primarily used to:",
+ opts:["Create a representative sample of the broader population","Distribute individual differences and extraneous variables evenly across experimental conditions","Reduce fatigue and practice effects","Keep participants unaware of the hypothesis"],
+ ans:1,
+ why:"Random assignment distributes participants' pre-existing individual differences (personality, ability, motivation, etc.) across conditions in an unsystematic, unbiased way. This makes the groups EQUIVALENT at the outset — not identical, but with no systematic advantage for any condition."},
+
+{ch:8,diff:"Moderate",
+ q:"Which counterbalancing method requires every possible sequence of conditions to be tested equally often?",
+ opts:["Latin Square Design","Random-Selected-Orders Design","Block Randomization Design","Complete Counterbalancing (All-Possible-Orders)"],
+ ans:3,
+ why:"Complete counterbalancing uses ALL n! possible orders (e.g., 4 conditions = 24 orders). It achieves three goals: (a) each condition appears equally often in each position; (b) each condition equally before/after every other; (c) equal frequency within each pair of positions. Downside: impractical with many conditions."},
+
+{ch:8,diff:"Moderate",
+ q:"The main disadvantage of within-subjects designs compared to between-subjects designs is:",
+ opts:["They require more participants per condition","They introduce order effects such as fatigue, practice, and carryover effects","They are less effective at creating equivalent groups at study onset","They cannot establish temporal order of causality"],
+ ans:1,
+ why:"Because every participant goes through all conditions sequentially, performance can be affected by position: fatigue (decline from tiredness), practice (improvement from experience), or carryover (the specific preceding condition uniquely affects the current one). Counterbalancing distributes but does not eliminate these effects."},
+
+{ch:8,diff:"Easy",
+ q:"The purpose of counterbalancing in within-subjects designs is to:",
+ opts:["Eliminate all extraneous variables from the experiment","Ensure participants are equally enthusiastic in every condition","Distribute order effects evenly so no single condition is systematically advantaged or disadvantaged","Create equivalent groups before assigning participants to conditions"],
+ ans:2,
+ why:"Counterbalancing does NOT eliminate order effects — fatigue, practice, and sensitization will still occur. What it does is ensure these effects are spread evenly across all conditions, so no single condition systematically benefits or suffers more than others. The effects are balanced out across the design."},
+
+{ch:8,diff:"Moderate",
+ q:"What distinguishes a matched-groups design from an independent-groups design?",
+ opts:["All participants experience all conditions in a matched-groups design","A matching variable is used to pair participants before random assignment to conditions","Random assignment is not used in matched-groups designs","Matched-groups designs are used exclusively with natural-groups variables"],
+ ans:1,
+ why:"In matched-groups: first, participants are matched on a key variable (e.g., IQ scores), creating matched sets. Then, within each set, members are RANDOMLY assigned to conditions. This improves precision by ensuring groups are similar on the matching variable — reducing variability between conditions."},
+
+{ch:8,diff:"Difficult",
+ q:"A study randomly assigns participants to meditation vs. control groups, but meditators happen to have significantly higher baseline well-being. This is problematic because:",
+ opts:["The DV has not been operationally defined","Baseline well-being is a confounding variable that co-varies with group membership and could explain outcome differences","The design lacks a within-subjects component","Random assignment guarantees no confounds can exist"],
+ ans:1,
+ why:"Even WITH random assignment, by chance the groups may differ on important variables (especially in small samples). Here, pre-existing well-being confounds any result: we cannot distinguish the effect of meditation from the effect of pre-existing higher well-being. This is why large samples improve the effectiveness of random assignment."},
+
+{ch:8,diff:"Moderate",
+ q:"The key advantage of a Latin Square design over complete counterbalancing is:",
+ opts:["It tests every possible sequence, maximising counterbalancing thoroughness","It achieves the two main counterbalancing goals using only n orders (not n! orders), requiring far fewer participants","It prevents order effects from occurring entirely","It is suitable only for between-subjects designs"],
+ ans:1,
+ why:"The Williams Latin Square uses only n orders (e.g., 4 orders for 4 conditions) instead of 4! = 24. It still achieves goals (1) and (2): each condition appears equally often in each position, and each condition appears equally often before and after every other condition. More practical than complete counterbalancing."},
+
+{ch:8,diff:"Moderate",
+ q:"Random assignment and random sampling differ in that:",
+ opts:["Random sampling determines which CONDITION a participant is placed in; random assignment determines who participates","Random assignment determines which CONDITION a participant is placed in; random sampling determines who is SELECTED to participate from the population","Both achieve the same goal of creating representative samples","Random sampling requires every population member to have a chance of assignment to a specific condition"],
+ ans:1,
+ why:"Critical distinction: random sampling = who participates (goal = representative sample from population). Random assignment = which condition each participant is placed in (goal = equivalent groups within the study). Most psychology studies use CONVENIENCE sampling (not random sampling) but still use random assignment."},
+
+{ch:8,diff:"Moderate",
+ q:"Masking (blinding) procedures in experiments involve:",
+ opts:["Randomly assigning participants to conditions using a computer","Keeping the experimenter unaware of the hypothesis being tested and/or which condition a participant is in, to prevent systematic bias","Counterbalancing conditions so order effects are evenly distributed","Using a placebo condition to control for expectancy effects"],
+ ans:1,
+ why:"Systematic bias occurs when an experimenter consistently treats participants differently based on which condition they are in (consciously or unconsciously). Masking prevents this by keeping the experimenter blind to condition assignment and/or the hypothesis — eliminating experimenter expectancy as a confound."},
+
+{ch:8,diff:"Difficult",
+ q:"Why must an independent variable have at least THREE levels to detect a nonlinear relationship?",
+ opts:["Because statistical tests require a minimum of three groups to be valid","Because with only two conditions, a line graph can only portray a straight line — it is impossible to know if the true relationship is curvilinear","Because three conditions are required for counterbalancing to work properly","Because ANOVA cannot be applied with fewer than three conditions"],
+ ans:1,
+ why:"With exactly two data points, any graph MUST produce a straight line — you need at least 3 points to see a curve. So if you create only two IV levels, you cannot detect whether the IV–DV relationship is linear or curvilinear. Three or more levels reveal the true shape of the relationship."},
+
+{ch:8,diff:"Moderate",
+ q:"When a single-factor experiment has three or more conditions, what is the typical analysis sequence?",
+ opts:["Run individual t-tests for every pair of conditions simultaneously","First run an ANOVA; if significant, then run post-hoc tests to compare specific condition means","Run post-hoc tests first, then confirm with ANOVA","Use only descriptive statistics; inferential tests are not needed with three conditions"],
+ ans:1,
+ why:"Standard procedure: (1) ANOVA tests whether the OVERALL pattern of means is statistically significant. If NOT significant, stop. If SIGNIFICANT, (2) post-hoc tests (e.g., Tukey, Bonferroni) compare specific pairs of conditions. Running t-tests on all pairs without ANOVA inflates the Type I error rate."},
+
+{ch:8,diff:"Difficult",
+ q:"The ABBA counterbalancing design fails when:",
+ opts:["There are more than four conditions in the experiment","Participants become aware of the experimental hypothesis","Order effects build up in a nonlinear fashion (nonlinear order effects)","The matching variable does not correlate with the DV"],
+ ans:2,
+ why:"ABBA assumes order effects accumulate linearly — that the effect at position 2 is the average of positions 1 and 3, etc. If effects are nonlinear (e.g., fatigue accelerates rapidly after position 3), this averaging assumption breaks down, and ABBA fails to balance order effects as intended."}
+
+]; /* ← end BANK */
+
+/* ────────────────────────── STATE ────────────────────────── */
+let pool=[], idx=0, answered={}, correct=0, total=0;
+let chScores={1:{c:0,t:0},4:{c:0,t:0},5:{c:0,t:0},8:{c:0,t:0}};
+let filter='all', shuffled=false;
+
+const LABELS=['A','B','C','D'];
+const CH_NAMES={1:'Ch 1 · Science',4:'Ch 4 · Variables',5:'Ch 5 · Correlation',8:'Ch 8 · Design'};
+
+function getPool(){
+  let q = filter==='all' ? [...BANK] : BANK.filter(x=>x.ch==filter);
+  if(shuffled){ for(let i=q.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[q[i],q[j]]=[q[j],q[i]];} }
+  return q;
+}
+
+function init(){
+  pool=getPool(); idx=0; answered={}; correct=0; total=0;
+  chScores={1:{c:0,t:0},4:{c:0,t:0},5:{c:0,t:0},8:{c:0,t:0}};
+  document.getElementById('results-panel').classList.remove('show');
+  document.getElementById('exam-body').style.display='';
+  document.getElementById('controls').style.display='';
+  updateProgress();
+  render();
+}
+
+function render(){
+  if(idx>=pool.length){ showResults(); return; }
+  const q=pool[idx];
+  const done=answered[idx]!==undefined;
+  const chosen=answered[idx];
+  const chCls={1:'c1',4:'c4',5:'c5',8:'c8'}[q.ch];
+  const container=document.getElementById('q-container');
+
+  let optsHTML=q.opts.map((o,i)=>{
+    let cls='opt';
+    if(done){ if(i===q.ans)cls+=' correct'; else if(i===chosen&&i!==q.ans)cls+=' wrong'; }
+    return `<button class="${cls}" onclick="pick(${i})" ${done?'disabled':''}><span class="opt-letter">${LABELS[i]}</span><span>${o}</span></button>`;
+  }).join('');
+
+  let expHTML='';
+  if(done){
+    const ok=chosen===q.ans;
+    expHTML=`<div class="explanation show ${ok?'ok':'bad'}">
+      <strong>${ok?'✓ Correct!':'✗ Incorrect — the right answer is ${LABELS[q.ans]}.'}</strong>
+      <div class="why-right">${q.why}</div>
+    </div>`.replace('${LABELS[q.ans]}',LABELS[q.ans]);
+  }
+
+  const isLast=idx===pool.length-1;
+  const navHTML=done?`<div class="nav"><button class="btn-next" onclick="${isLast?'showResults()':'next()'}">
+    ${isLast?'View Results →':'Next Question →'}</button></div>`:'';
+
+  container.innerHTML=`
+    <div class="q-card">
+      <div class="q-meta">
+        <span class="q-num">Q${idx+1} of ${pool.length}</span>
+        <span class="q-ch ${chCls}">${CH_NAMES[q.ch]}</span>
+        <span class="q-diff">${q.diff}</span>
+      </div>
+      <div class="q-text">${q.q}</div>
+      <div class="options">${optsHTML}</div>
+      ${expHTML}
+      ${navHTML}
+    </div>`;
+  updateProgress();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function pick(i){
+  if(answered[idx]!==undefined) return;
+  const q=pool[idx];
+  answered[idx]=i; total++;
+  chScores[q.ch].t++;
+  if(i===q.ans){ correct++; chScores[q.ch].c++; }
+  updateHeader();
+  render();
+}
+
+function next(){ idx++; render(); }
+
+function updateProgress(){
+  const pct=Math.round((idx/pool.length)*100);
+  document.getElementById('pfill').style.width=pct+'%';
+  document.getElementById('ptext').textContent=`${idx} / ${pool.length}`;
+}
+function updateHeader(){
+  document.getElementById('hdr-score').textContent=correct;
+  document.getElementById('hdr-ans').textContent=total;
+}
+
+function showResults(){
+  document.getElementById('exam-body').style.display='none';
+  document.getElementById('controls').style.display='none';
+  const pct=Math.round((correct/pool.length)*100);
+  const panel=document.getElementById('results-panel');
+  document.getElementById('r-score').textContent=correct;
+  document.getElementById('r-total').textContent='/ '+pool.length;
+  document.getElementById('r-title').textContent=
+    pct>=85?'🏆 Outstanding!':pct>=70?'📚 Strong effort!':pct>=55?'💡 Keep reviewing!':'🔁 More practice needed';
+  document.getElementById('r-pct').textContent=`You scored ${pct}% — ${correct} correct out of ${pool.length} questions`;
+  const chapters=filter==='all'?[1,4,5,8]:[parseInt(filter)];
+  document.getElementById('r-breakdown').innerHTML=chapters.map(c=>{
+    const s=chScores[c];
+    if(!s.t) return '';
+    return `<div class="bd-item c${c}"><div class="bd-val">${s.c}/${s.t}</div><div class="bd-label">${CH_NAMES[c]}</div></div>`;
+  }).join('');
+  panel.classList.add('show');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function restart(){
+  init();
+}
+
+/* ── FILTER BUTTONS ── */
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    filter=btn.dataset.f;
+    init();
+  });
+});
+
+/* ── SHUFFLE ── */
+document.getElementById('shuffle-btn').addEventListener('click',()=>{
+  shuffled=!shuffled;
+  document.getElementById('shuffle-btn').textContent=shuffled?'⇄ Shuffle ON':'⇄ Shuffle';
+  document.getElementById('shuffle-btn').style.color=shuffled?'var(--gold)':'';
+  document.getElementById('shuffle-btn').style.borderColor=shuffled?'var(--gold)':'';
+  init();
+});
+
+/* ── BOOT ── */
+init();
+</script>
+</body>
+</html>
